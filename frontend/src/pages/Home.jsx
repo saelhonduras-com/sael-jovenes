@@ -202,7 +202,7 @@ export default function Home() {
           <div className="mt-4">
             <a
               href="#reserva-habitaciones"
-              className="text-sm font-semibold text-[#1D71B8] underline decoration-[#1D71B8]/40 underline-offset-4 transition hover:decoration-[#1D71B8] [text-shadow:0_1px_6px_rgba(0,0,0,0.4)]"
+              className="text-sm font-semibold text-[#FDC41F] underline decoration-[#FDC41F]/40 underline-offset-4 transition hover:decoration-[#FDC41F] [text-shadow:0_1px_6px_rgba(0,0,0,0.4)]"
             >
               Reserva de Habitaciones
             </a>
