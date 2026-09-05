@@ -169,7 +169,7 @@ export default function Home() {
         <div className="absolute inset-0 bg-night/60" />
 
         <div className="relative mx-auto max-w-5xl px-5 pb-20 pt-16 text-center">
-          <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#1D71B8] [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
+          <p className="text-xs font-bold uppercase tracking-[0.35em] text-[#FDC41F] [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
             FIHNEC
           </p>
           <p className="mb-4 mt-2 text-xs font-semibold uppercase tracking-[0.15em] text-parchment/70 [text-shadow:0_1px_8px_rgba(0,0,0,0.5)]">
