@@ -1,0 +1,64 @@
+# Changelog
+
+Todos los cambios notables de este proyecto se documentan en este archivo.
+
+Formato basado en [Keep a Changelog](https://keepachangelog.com/es/1.0.0/).
+Convención de versión: PATCH = solo backend, MINOR = toca frontend, MAJOR = mutuo acuerdo.
+
+## [0.6.0] - 2026-08-16
+
+### Added
+- Tablas `participantes` e `inscripciones` en base de datos
+- Endpoints: `GET /api/participantes/dni/:dni` (verificar duplicado), `POST /api/participantes` (registro nuevo), `POST /api/inscripciones` (inscribir a evento)
+- Wizard de inscripción público de 6 pasos (`Registro.jsx`) en `/registro`: DNI → datos personales → ubicación → datos FIHNEC → contacto de emergencia → confirmación
+- Detección automática de DNI existente: si ya está registrado, salta directo a confirmar inscripción al evento actual sin repetir el formulario
+
+## [0.7.0] - 2026-08-16
+
+### Added
+- Sistema de autenticación con JWT y mismo esquema de roles que SFL (`super_admin`, `admin`, `consulta`, `estandar`, `registro`)
+- Tablas `usuarios_admin` y `permisos_modulo`
+- Endpoint `POST /api/auth/login`, middleware `requireAuth`/`requireRole`/`requireModulo`
+- Script `crear_super_admin.js` para crear el primer usuario administrador
+- Panel administrativo (`/admin`) con login, layout con sidebar, y cierre de sesión
+- Módulo de Eventos en el panel: crear, editar, eliminar encuentros mensuales desde la interfaz (reemplaza el script manual de prueba)
+
+## [0.6.1] - 2026-08-16
+### Fixed
+- Validación de teléfonos a exactamente 8 dígitos (frontend y backend)
+- Botón de selección Sí/No de "¿Ha recibido SAELES?" ahora sí muestra visualmente cuál está elegido
+- DNI centrado con tipografía más grande
+
+## [0.5.0] - 2026-08-16
+
+### Changed
+- Proyecto renombrado de "SAEL" genérico a **SAEL Hombres**, primero de cuatro sistemas hermanos (Hombres, Damas, Señoritas, Jóvenes) que compartirán el dominio `saelhonduras.com`, cada uno con repo, base de datos y despliegue independientes
+- Repo de GitHub renombrado a `sael-hombres`
+- `package.json` (backend y frontend) y navbar actualizados con el nombre "SAEL Hombres"
+
+## [0.4.0] - 2026-08-16
+
+### Added
+- Página principal pública (`Home.jsx`) con hero, contador regresivo al cierre de inscripción del próximo encuentro, tarjeta de "Próximo encuentro SAEL" y sección "¿Cómo funciona el registro?"
+- Componente `Contador.jsx` (cuenta regresiva en vivo)
+- Cliente API (`api.js`) con axios
+- Enrutamiento básico (`react-router-dom`) con rutas placeholder para `/registro` y `/autoconsulta`
+
+## [0.3.0] - 2026-08-16
+
+### Added
+- Corredor de migraciones SQL (`backend/scripts/aplicar_una_migracion.js`)
+- Tabla `eventos` en base de datos (encuentros mensuales SAEL): nombre, año, mes, fechas de inicio/fin, fecha límite de registro, estado abierto/cerrado, marcador de "evento actual"
+- Endpoint público `GET /api/eventos`
+
+## [0.2.0] - 2026-08-15
+
+### Added
+- Scaffold inicial de `backend/` (Node.js/Express): `server.js`, conexión a PostgreSQL (`db.js`), ruta de salud (`/api/salud`, `/api/salud-completa`), manejo de errores async, `.env.example`
+- Scaffold inicial de `frontend/` (React/Vite/Tailwind): configuración base, página de bienvenida temporal
+
+## [0.1.0] - 2026-08-15
+
+### Added
+- Estructura inicial del repositorio (`README.md`, `CHANGELOG.md`, `AUTORIA.md`, `.gitignore`)
+- Definición del proyecto y alcance inicial basado en documento de requerimientos SAEL
