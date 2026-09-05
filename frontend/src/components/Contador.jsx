@@ -30,7 +30,7 @@ export default function Contador({ fechaObjetivo, horaObjetivo, etiqueta }) {
 
   return (
     <div className="mt-10 inline-flex flex-col items-center gap-3">
-      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-parchment/60 [text-shadow:0_1px_6px_rgba(0,0,0,0.45)]">{etiqueta}</p>
+      <p className="text-xs font-semibold uppercase tracking-[0.2em] text-white [text-shadow:0_1px_6px_rgba(0,0,0,0.45)]">{etiqueta}</p>
       <div className="flex gap-4">
         {[
           { valor: restante.dias, texto: 'días' },
