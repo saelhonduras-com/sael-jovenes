@@ -178,7 +178,7 @@ export default function AdminLayout() {
             );
           })}
         </nav>
-        <main className="flex-1 p-6">
+        <main className="flex-1 bg-[#EAF1FB] p-6">
           <Outlet context={{ rol: usuario?.rol, permisosPorModulo, refrescarResumen: cargarResumen }} />
         </main>
       </div>
