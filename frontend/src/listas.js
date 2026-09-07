@@ -1,20 +1,3 @@
-export const ZONAS_FIHNEC = [
-  "Zona Noroccidente",
-  "Zona Sur",
-  "Zona Olancho",
-  "Zona Ocotepeque",
-  "Zona El Paraíso",
-  "Zona Centro 2",
-  "Zona Atlántida",
-  "Zona Comayagua",
-  "Zona Centro 1",
-  "Zona La Paz",
-  "Zona Copán",
-  "Zona Lempira",
-  "Zona Norte",
-  "Zona Siguatepeque",
-  "Zona Aguán",
-];
 
 export const MUNICIPIOS_POR_DEPARTAMENTO = {
   "Atlántida": ["Arizona", "El Porvenir", "Esparta", "Jutiapa", "La Ceiba", "La Masica", "San Francisco", "Tela"],
@@ -42,17 +25,17 @@ export const ZONAS_FIHNEC = [
   "Zona Sur",
   "Zona Olancho",
   "Zona Ocotepeque",
-  "Zona El Paraizo",
+  "Zona El Paraíso",
   "Zona Centro 2",
-  "Zona Atlantida",
+  "Zona Atlántida",
   "Zona Comayagua",
   "Zona Centro 1",
   "Zona La Paz",
-  "Zona Copan",
+  "Zona Copán",
   "Zona Lempira",
   "Zona Norte",
   "Zona Siguatepeque",
-  "Zona Aguan",
+  "Zona Aguán",
 ];
 
 // Igual al catálogo de SFL, sin "Servidor del SFL" (no aplica a SAEL) —
