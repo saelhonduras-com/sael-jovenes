@@ -1,3 +1,23 @@
+export const DEPARTAMENTOS_HONDURAS = [
+  "Atlántida",
+  "Choluteca",
+  "Colón",
+  "Comayagua",
+  "Copán",
+  "Cortés",
+  "El Paraíso",
+  "Francisco Morazán",
+  "Gracias a Dios",
+  "Intibucá",
+  "Islas de la Bahía",
+  "La Paz",
+  "Lempira",
+  "Ocotepeque",
+  "Olancho",
+  "Santa Bárbara",
+  "Valle",
+  "Yoro"
+];
 
 export const MUNICIPIOS_POR_DEPARTAMENTO = {
   "Atlántida": ["Arizona", "El Porvenir", "Esparta", "Jutiapa", "La Ceiba", "La Masica", "San Francisco", "Tela"],
@@ -113,7 +133,7 @@ export const TIPOS_TESTIMONIO = [
 
 export const FORMACION_OFICIAL = [
   "Escuela de la Visión",
-  "LGMFT",
+  "Taller La Gente Más Feliz de la Tierra",
   "SAEL",
   "SFL I",
   "SFL II",
