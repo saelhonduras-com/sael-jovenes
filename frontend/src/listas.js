@@ -112,7 +112,7 @@ export const TIPOS_TESTIMONIO = [
 
 export const FORMACION_OFICIAL = [
   "Escuela de la Visión",
-  "LGMFT",
+  "Taller La Gente Más Feliz de la Tierra",
   "SAEL",
   "SFL I",
   "SFL II",
