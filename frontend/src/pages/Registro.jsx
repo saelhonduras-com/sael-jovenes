@@ -345,7 +345,7 @@ export default function Registro() {
     return true;
   }
   function validarPaso3() {
-    return form.departamento && form.municipio && form.zona;
+    return form.departamento && form.municipio && form.zona && form.capitulo.trim();
   }
   function validarPaso4() {
     if (!form.cargo_fihnec || form.ha_recibido_saeles === null) return false;
