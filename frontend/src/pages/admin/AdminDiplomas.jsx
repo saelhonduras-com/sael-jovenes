@@ -233,13 +233,14 @@ export default function AdminDiplomas() {
                     <th className="px-4 py-3">Nombre</th>
                     <th className="px-4 py-3">1er SAEL</th>
                     <th className="px-4 py-3">Efectivo</th>
+                    <th className="px-4 py-3">Cortesía</th>
                     <th className="px-4 py-3">Transferencia Bancaria</th>
                     <th className="px-4 py-3">Tarjeta crédito/débito</th>
                   </tr>
                 </thead>
                 <tbody>
                   {(!datos || datos.filas.length === 0) && (
-                    <tr><td colSpan={8} className="px-4 py-6 text-center text-ink/40">Todavía no hay participantes con asistencia confirmada en este evento.</td></tr>
+                    <tr><td colSpan={9} className="px-4 py-6 text-center text-ink/40">Todavía no hay participantes con asistencia confirmada en este evento.</td></tr>
                   )}
                   {datos?.filas.slice((pagina - 1) * POR_PAGINA, pagina * POR_PAGINA).map((f) => (
                     <tr key={f.numero} className="border-b border-ink/5 text-left last:border-0">
@@ -249,6 +250,7 @@ export default function AdminDiplomas() {
                       <td className="px-4 py-3 text-ink/60">{f.nombre_completo}</td>
                       <td className="px-4 py-3 text-ink/60">{f.primera_vez ? '1' : ''}</td>
                       <td className="px-4 py-3 text-ink/60">{f.metodo_pago === 'efectivo' && f.alimentacion_monto ? `L. ${f.alimentacion_monto}` : ''}</td>
+                      <td className="px-4 py-3 font-medium text-[#007334]">{f.es_cortesia ? `L. ${f.cortesia_monto}` : ''}</td>
                       <td className="px-4 py-3 text-ink/60">{f.metodo_pago === 'transferencia' && f.alimentacion_monto ? `L. ${f.alimentacion_monto}` : ''}</td>
                       <td className="px-4 py-3 text-ink/60">{f.metodo_pago === 'tarjeta' && f.alimentacion_monto ? `L. ${f.alimentacion_monto}` : ''}</td>
                     </tr>
@@ -261,6 +263,7 @@ export default function AdminDiplomas() {
                       <td className="px-4 py-3">Total: {datos.total}</td>
                       <td className="px-4 py-3">1ra vez: {datos.total_primera_vez}</td>
                       <td className="px-4 py-3">L. {datos.totalesPago?.efectivo?.toFixed(2) ?? '0.00'}</td>
+                      <td className="px-4 py-3 text-[#007334]">L. {datos.totalesPago?.cortesia?.toFixed(2) ?? '0.00'}</td>
                       <td className="px-4 py-3">L. {datos.totalesPago?.transferencia?.toFixed(2) ?? '0.00'}</td>
                       <td className="px-4 py-3">L. {datos.totalesPago?.tarjeta?.toFixed(2) ?? '0.00'}</td>
                     </tr>

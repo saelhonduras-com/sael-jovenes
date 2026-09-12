@@ -86,8 +86,9 @@ export default function AdminParticipantes() {
   const [estadisticas, setEstadisticas] = useState(null);
   const [eventoActual, setEventoActual] = useState(null);
 
-  // --- Módulo de cobro (se abre al marcar "Registrado" en Inscribiéndose ahora) ---
-  const [cobrando, setCobrando] = useState(null); // { inscripcion, cuentaId, banco_o_recibo, observaciones_pago } | null
+  // --- Módulo de cobro (se abre al marcar "Registrado" en Inscribiéndose ahora
+  // o en el Detalle del participante — ambos caminos pasan por aquí) ---
+  const [cobrando, setCobrando] = useState(null); // { inscripcion, eventoId, onGuardado, cuentaId, banco_o_recibo, observaciones_pago } | null
   const [opcionesInscripcion, setOpcionesInscripcion] = useState([]); // las 3 cuentas: boletos_evento, boletos_bancos, cortesia
   const [guardandoCobro, setGuardandoCobro] = useState(false);
 
@@ -255,10 +256,17 @@ export default function AdminParticipantes() {
   // pero siempre se ofrece la oportunidad de capturarlo, para que no se
   // quede vacío por accidente. Al DESMARCAR se pide confirmación (ver
   // pedirDesmarcar arriba), ya no es una corrección silenciosa.
-  async function abrirCobro(inscripcion) {
+  //
+  // Acepta eventoId y onGuardado como parámetros opcionales para que
+  // TAMBIÉN se pueda abrir desde el checkbox del Detalle del participante
+  // (ver "Registrado presencial" más abajo) — ahí el evento no siempre es
+  // el actual, y hay que recargar el detalle en vez de la lista.
+  async function abrirCobro(inscripcion, eventoId = eventoActual?.id, onGuardado) {
     setError('');
     setCobrando({
       inscripcion,
+      eventoId,
+      onGuardado: onGuardado || (() => { setBuscarActual(''); cargarInscripcionesEventoActual(''); }),
       cuentaId: '', // '' = sin seleccionar (opcional)
       banco_o_recibo: '',
       observaciones_pago: '',
@@ -268,7 +276,7 @@ export default function AdminParticipantes() {
       // por su clave interna (no por nombre/código, que son libres de
       // editar): boletos_evento (4.1.1), boletos_bancos (4.1.2),
       // cortesia (4.1.4), y boletos_tarjeta (4.1.5).
-      const { data: cuentas } = await api.get(`/admin/eventos/${eventoActual.id}/valores-cuenta`, { params: { tipo: 'ingreso' } });
+      const { data: cuentas } = await api.get(`/admin/eventos/${eventoId}/valores-cuenta`, { params: { tipo: 'ingreso' } });
       const claves = ['boletos_evento', 'boletos_bancos', 'boletos_tarjeta', 'cortesia'];
       const opciones = claves
         .map((clave) => cuentas.find((c) => c.clave_sistema === clave))
@@ -309,13 +317,10 @@ export default function AdminParticipantes() {
         banco_o_recibo: opcion.pideBanco ? cobrando.banco_o_recibo : null,
         observaciones_pago: cobrando.observaciones_pago,
       });
+      const onGuardado = cobrando.onGuardado;
       setCobrando(null);
       refrescarResumen();
-      // Se limpia el filtro de búsqueda y se recarga la lista completa —
-      // así el que se acaba de registrar ya aparece al final (los
-      // registrados quedan siempre al fondo, ordenados por el backend).
-      setBuscarActual('');
-      cargarInscripcionesEventoActual('');
+      onGuardado();
     } catch (err) {
       setError(mensajeError(err));
     } finally {
@@ -416,15 +421,26 @@ export default function AdminParticipantes() {
     });
   }
 
-  async function marcarPresencial(inscripcionId, valor) {
-    setError('');
-    try {
-      await api.put(`/admin/inscripciones/${inscripcionId}/presencial`, { registrado_presencial: valor });
-      await recargarDetalle(seleccionado.id);
-      refrescarResumen();
-    } catch (err) {
-      setError(mensajeError(err));
+  // Igual que abrirCobro más arriba: al MARCAR, abre el módulo de cobro
+  // (evento propio de esta fila del historial, y recarga el Detalle al
+  // guardar) en vez de confirmar directo. Al DESMARCAR, sigue igual —
+  // llama directo al backend, sin pedir cobro.
+  function marcarPresencial(inscripcionId, valor, eventoId) {
+    if (valor) {
+      abrirCobro(
+        { inscripcion_id: inscripcionId, nombre_completo: seleccionado?.nombre_completo },
+        eventoId,
+        () => recargarDetalle(seleccionado.id)
+      );
+      return;
     }
+    setError('');
+    api.put(`/admin/inscripciones/${inscripcionId}/presencial`, { registrado_presencial: false })
+      .then(async () => {
+        await recargarDetalle(seleccionado.id);
+        refrescarResumen();
+      })
+      .catch((err) => setError(mensajeError(err)));
   }
 
   function abrirEditar() {
@@ -772,7 +788,7 @@ export default function AdminParticipantes() {
                     <input
                       type="checkbox"
                       checked={i.registrado_presencial}
-                      onChange={(e) => marcarPresencial(i.id, e.target.checked)}
+                      onChange={(e) => marcarPresencial(i.id, e.target.checked, i.evento_id)}
                     />
                     Registrado presencial
                   </label>

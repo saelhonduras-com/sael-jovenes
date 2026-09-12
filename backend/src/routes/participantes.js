@@ -862,6 +862,15 @@ router.put('/admin/inscripciones/:id/presencial', requireAuth, requireModulo('pa
 // actualiza después). Se calcula igual que "Total de SAELES": histórico
 // previo + confirmaciones reales dentro del sistema. Es "primera vez"
 // solo cuando ese total da exactamente 1.
+//
+// "Cortesía" (agregado): alguien SÍ pasó por el módulo de Cobro
+// (alimentacion_monto no es null) pero sin método de pago — así queda
+// marcada la Cortesía siempre, por diseño (ver Módulo de Cobro). Se
+// muestra en su propia columna con el valor de referencia de
+// "Inscripción Efectivo" de ESTE evento (nunca se cobra ese monto de
+// verdad — es solo para que el reporte refleje cuánto "vale" la
+// cortesía). Si el evento no tiene ese valor configurado, se usa 0 en
+// vez de tronar el reporte.
 async function obtenerFilasDiplomas(evento_id) {
   const { rows } = await pool.query(
     `SELECT p.zona, p.capitulo, p.nombre_completo, p.veces_saeles_previas,
@@ -874,23 +883,35 @@ async function obtenerFilasDiplomas(evento_id) {
      ORDER BY p.zona ASC, p.nombre_completo ASC`,
     [evento_id]
   );
+
+  const { rows: valorRef } = await pool.query(
+    `SELECT vc.valor FROM valores_cuenta vc
+     JOIN catalogo_cuentas cc ON cc.id = vc.cuenta_id
+     WHERE vc.evento_id = $1 AND cc.clave_sistema = 'boletos_evento'`,
+    [evento_id]
+  );
+  const valorInscripcionEfectivo = valorRef[0]?.valor ? Number(valorRef[0].valor) : 0;
+
   const conPrimeraVez = rows.map((r) => ({
     ...r,
     total_saeles: (r.veces_saeles_previas || 0) + parseInt(r.confirmadas, 10),
+    es_cortesia: r.metodo_pago === null && r.alimentacion_monto !== null,
   }));
   const total_primera_vez = conPrimeraVez.filter((r) => r.total_saeles === 1).length;
 
   // Totales por método de pago — suma de alimentacion_monto agrupado por
-  // metodo_pago, para las 3 columnas nuevas (Efectivo / Transferencia
-  // Bancaria / Tarjeta) que se muestran en pantalla, Excel y PDF.
-  const totalesPago = { efectivo: 0, transferencia: 0, tarjeta: 0 };
+  // metodo_pago, más el total de Cortesía (cantidad × valor de referencia).
+  const totalesPago = { efectivo: 0, transferencia: 0, tarjeta: 0, cortesia: 0 };
   conPrimeraVez.forEach((r) => {
     if (r.metodo_pago && totalesPago[r.metodo_pago] !== undefined && r.alimentacion_monto) {
       totalesPago[r.metodo_pago] += Number(r.alimentacion_monto);
     }
+    if (r.es_cortesia) {
+      totalesPago.cortesia += valorInscripcionEfectivo;
+    }
   });
 
-  return { rows: conPrimeraVez, total: conPrimeraVez.length, total_primera_vez, totalesPago };
+  return { rows: conPrimeraVez, total: conPrimeraVez.length, total_primera_vez, totalesPago, valorInscripcionEfectivo };
 }
 
 // Admin: lista para mostrar en pantalla (tabla + totales)
@@ -901,7 +922,7 @@ router.get('/admin/eventos/:evento_id/diplomas', requireAuth, requireModulo('dip
     if (evento.rows.length === 0) {
       return res.status(404).json({ error: 'El evento no existe.' });
     }
-    const { rows, total, total_primera_vez, totalesPago } = await obtenerFilasDiplomas(evento_id);
+    const { rows, total, total_primera_vez, totalesPago, valorInscripcionEfectivo } = await obtenerFilasDiplomas(evento_id);
     res.json({
       evento_nombre: evento.rows[0].nombre,
       filas: rows.map((r, i) => ({
@@ -912,6 +933,8 @@ router.get('/admin/eventos/:evento_id/diplomas', requireAuth, requireModulo('dip
         primera_vez: r.total_saeles === 1,
         metodo_pago: r.metodo_pago,
         alimentacion_monto: r.alimentacion_monto,
+        es_cortesia: r.es_cortesia,
+        cortesia_monto: r.es_cortesia ? valorInscripcionEfectivo : null,
       })),
       total,
       total_primera_vez,
@@ -930,7 +953,7 @@ router.get('/admin/eventos/:evento_id/diplomas/excel', requireAuth, requireModul
     if (evento.rows.length === 0) {
       return res.status(404).json({ error: 'El evento no existe.' });
     }
-    const { rows, total, total_primera_vez, totalesPago } = await obtenerFilasDiplomas(evento_id);
+    const { rows, total, total_primera_vez, totalesPago, valorInscripcionEfectivo } = await obtenerFilasDiplomas(evento_id);
 
     const datos = rows.map((r, i) => ({
       '#': i + 1,
@@ -939,6 +962,7 @@ router.get('/admin/eventos/:evento_id/diplomas/excel', requireAuth, requireModul
       NOMBRE: r.nombre_completo,
       '1ER SAEL': r.total_saeles === 1 ? '1' : '',
       Efectivo: r.metodo_pago === 'efectivo' && r.alimentacion_monto ? Number(r.alimentacion_monto) : '',
+      Cortesía: r.es_cortesia ? valorInscripcionEfectivo : '',
       'Transferencia Bancaria': r.metodo_pago === 'transferencia' && r.alimentacion_monto ? Number(r.alimentacion_monto) : '',
       'Tarjeta credito/debito': r.metodo_pago === 'tarjeta' && r.alimentacion_monto ? Number(r.alimentacion_monto) : '',
     }));
@@ -947,6 +971,7 @@ router.get('/admin/eventos/:evento_id/diplomas/excel', requireAuth, requireModul
     datos.push({ CAPÍTULO: 'Total confirmados', NOMBRE: total });
     datos.push({ CAPÍTULO: 'Total primera vez', NOMBRE: total_primera_vez });
     datos.push({ CAPÍTULO: 'Total Efectivo', NOMBRE: totalesPago.efectivo });
+    datos.push({ CAPÍTULO: 'Total Cortesía', NOMBRE: totalesPago.cortesia });
     datos.push({ CAPÍTULO: 'Total Transferencia Bancaria', NOMBRE: totalesPago.transferencia });
     datos.push({ CAPÍTULO: 'Total TC / TD', NOMBRE: totalesPago.tarjeta });
 
@@ -971,7 +996,7 @@ router.get('/admin/eventos/:evento_id/diplomas/pdf', requireAuth, requireModulo(
     if (evento.rows.length === 0) {
       return res.status(404).json({ error: 'El evento no existe.' });
     }
-    const { rows, total, total_primera_vez, totalesPago } = await obtenerFilasDiplomas(evento_id);
+    const { rows, total, total_primera_vez, totalesPago, valorInscripcionEfectivo } = await obtenerFilasDiplomas(evento_id);
 
     // Vertical (portrait), a pedido de Carlos.
     const doc = new PDFDocument({ size: 'letter', margin: 0, layout: 'portrait' });
@@ -1018,10 +1043,10 @@ router.get('/admin/eventos/:evento_id/diplomas/pdf', requireAuth, requireModulo(
     }
 
     // Tabla centrada horizontalmente en la página, columnas también
-    // centradas (encabezados y datos por igual). Se achicaron las 5
-    // columnas originales para que quepan las 3 nuevas de método de pago
-    // sin salirse de la hoja vertical.
-    const anchoCol = { num: 22, zona: 62, capitulo: 62, nombre: 108, primera: 42, efectivo: 62, transferencia: 72, tarjeta: 62 };
+    // centradas (encabezados y datos por igual). Se agregó la columna
+    // Cortesía justo después de Efectivo — los anchos ya vienen ajustados
+    // para que las 8 columnas quepan sin salirse de la hoja vertical.
+    const anchoCol = { num: 20, zona: 58, capitulo: 56, nombre: 96, primera: 38, efectivo: 56, cortesia: 56, transferencia: 64, tarjeta: 56 };
     const anchoTabla = Object.values(anchoCol).reduce((a, b) => a + b, 0);
     const inicioTabla = (anchoPagina - anchoTabla) / 2;
     const col = { num: inicioTabla };
@@ -1030,7 +1055,8 @@ router.get('/admin/eventos/:evento_id/diplomas/pdf', requireAuth, requireModulo(
     col.nombre = col.capitulo + anchoCol.capitulo;
     col.primera = col.nombre + anchoCol.nombre;
     col.efectivo = col.primera + anchoCol.primera;
-    col.transferencia = col.efectivo + anchoCol.efectivo;
+    col.cortesia = col.efectivo + anchoCol.efectivo;
+    col.transferencia = col.cortesia + anchoCol.cortesia;
     col.tarjeta = col.transferencia + anchoCol.transferencia;
 
     function celda(texto, x, y, ancho, alineacion = 'center') {
@@ -1053,6 +1079,7 @@ router.get('/admin/eventos/:evento_id/diplomas/pdf', requireAuth, requireModulo(
       celda('NOMBRE', col.nombre, y, anchoCol.nombre, 'left');
       celda('1ER SAEL', col.primera, y, anchoCol.primera);
       celda('EFECTIVO', col.efectivo, y, anchoCol.efectivo);
+      celda('CORTESÍA', col.cortesia, y, anchoCol.cortesia);
       celda('TRANSF.', col.transferencia, y, anchoCol.transferencia);
       celda('TARJETA', col.tarjeta, y, anchoCol.tarjeta);
       doc.y = y + 16;
@@ -1095,6 +1122,7 @@ router.get('/admin/eventos/:evento_id/diplomas/pdf', requireAuth, requireModulo(
       celdaEnvuelta(r.nombre_completo, col.nombre, y, anchoCol.nombre);
       celda(r.total_saeles === 1 ? '1' : '', col.primera, y, anchoCol.primera);
       celda(r.metodo_pago === 'efectivo' && r.alimentacion_monto ? `L.${r.alimentacion_monto}` : '', col.efectivo, y, anchoCol.efectivo);
+      celda(r.es_cortesia ? `L.${valorInscripcionEfectivo}` : '', col.cortesia, y, anchoCol.cortesia);
       celda(r.metodo_pago === 'transferencia' && r.alimentacion_monto ? `L.${r.alimentacion_monto}` : '', col.transferencia, y, anchoCol.transferencia);
       celda(r.metodo_pago === 'tarjeta' && r.alimentacion_monto ? `L.${r.alimentacion_monto}` : '', col.tarjeta, y, anchoCol.tarjeta);
 
@@ -1121,6 +1149,7 @@ router.get('/admin/eventos/:evento_id/diplomas/pdf', requireAuth, requireModulo(
     celda('TOTALES', col.capitulo, yTotalesDiplomas, anchoCol.capitulo + anchoCol.nombre, 'left');
     celda(String(total_primera_vez), col.primera, yTotalesDiplomas, anchoCol.primera);
     celda(`L.${totalesPago.efectivo.toFixed(2)}`, col.efectivo, yTotalesDiplomas, anchoCol.efectivo);
+    celda(`L.${totalesPago.cortesia.toFixed(2)}`, col.cortesia, yTotalesDiplomas, anchoCol.cortesia);
     celda(`L.${totalesPago.transferencia.toFixed(2)}`, col.transferencia, yTotalesDiplomas, anchoCol.transferencia);
     celda(`L.${totalesPago.tarjeta.toFixed(2)}`, col.tarjeta, yTotalesDiplomas, anchoCol.tarjeta);
     doc.font('Helvetica');
