@@ -305,13 +305,13 @@ export default function Registro() {
       .join(' ');
   }
 
-  function validarEdicion() {
-    if (!formEdicion.nombre_completo || !formEdicion.fecha_nacimiento || !formEdicion.estado_civil) return false;
-    if (!/^\d{8}$/.test(formEdicion.telefono_movil)) return false;
-    if (!formEdicion.departamento || !formEdicion.municipio || !formEdicion.zona || !formEdicion.cargo_fihnec) return false;
-    if (!formEdicion.contacto_emergencia_nombre || !/^\d{8}$/.test(formEdicion.contacto_emergencia_telefono)) return false;
-    return true;
-  }
+function validarEdicion() {
+  if (!formEdicion.nombre_completo || !formEdicion.fecha_nacimiento || !formEdicion.estado_civil) return false;
+  if (!/^\d{8}$/.test(formEdicion.telefono_movil)) return false;
+  if (!formEdicion.departamento || !formEdicion.municipio || !formEdicion.zona || !formEdicion.cargo_fihnec || !formEdicion.capitulo.trim()) return false;
+  if (!formEdicion.contacto_emergencia_nombre || !/^\d{8}$/.test(formEdicion.contacto_emergencia_telefono)) return false;
+  return true;
+}
 
   async function guardarEdicionYConfirmar() {
     if (!validarEdicion()) {
